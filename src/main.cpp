@@ -4,7 +4,7 @@
 #include "Shader.h"
 
 int screenWidth = 900;
-int screenHeight = 700;
+int screenHeight = 900;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
