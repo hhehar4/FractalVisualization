@@ -1,11 +1,16 @@
 #version 330 core 
 
-#define MAX_ITERATIONS 50
-#define THRESHOLD 5
+#define MAX_ITERATIONS 500
+#define THRESHOLD 1000
           
 in vec4 gl_FragCoord;
 
 layout(location = 0) out vec4 color; 
+
+uniform float verticalOffset;
+uniform float horizontalOffset;
+uniform float zoomScale;
+uniform vec2 screenSize;
 
 vec2 multiplyComplex(vec2 a, vec2 b) {
     float real = (a.x * b.x) - (a.y * b.y);
@@ -15,17 +20,22 @@ vec2 multiplyComplex(vec2 a, vec2 b) {
 }
 
 vec2 getPixelCoords() {
-    return vec2((gl_FragCoord.x/900.0f) * 3 - 2.0f, (gl_FragCoord.y/900.0f) * 3 - 1.5f);
+    float aspectRatio = screenSize.x/screenSize.y;
+
+    vec2 normalizedCoords = gl_FragCoord.xy/screenSize - 0.5;
+    normalizedCoords *= 2;
+
+    vec2 coords = vec2(2.0f, 2.0f/aspectRatio) * zoomScale * normalizedCoords + vec2(horizontalOffset, verticalOffset);
+    return coords;
 }
 
 float iterateFunc(vec2 coords) {
     int iteration = 0;
-    float c_real = coords.x;
-    float c_imag = coords.y;
+    vec2 cVal = coords;
     vec2 zVal = coords;
 
     while(iteration < MAX_ITERATIONS) {
-        zVal = multiplyComplex(zVal, zVal) + vec2(c_real, c_imag);
+        zVal = multiplyComplex(zVal, zVal) + cVal;
         
         float dist = zVal.x * zVal.x + zVal.y * zVal.y;
         if(dist > THRESHOLD) {

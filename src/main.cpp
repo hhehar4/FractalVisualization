@@ -3,23 +3,60 @@
 #include <GLFW/glfw3.h>
 #include "Shader.h"
 
-int screenWidth = 900;
+int screenWidth = 1440;
 int screenHeight = 900;
+float verticalOffset = 0.0f;
+float horizontalOffset = 0.0f;
+float zoomScale = 1;
+float baseTranslationIncrement = 0.025f;
+float currentTranslationIncrement = 0.025f;
+float zoomIncrement = 1.05f;
+
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
 }
 
+void cursor_position_callback(GLFWwindow* window, double xPos, double yPos)
+{
+    
+}
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    if ((key == GLFW_KEY_ESCAPE) && action == GLFW_PRESS) {
+        glfwSetWindowShouldClose(window, 1);
+    }
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        verticalOffset += currentTranslationIncrement;
+    }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        verticalOffset -= currentTranslationIncrement;
+    }
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        horizontalOffset -= currentTranslationIncrement;
+    }
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+        horizontalOffset += currentTranslationIncrement;
+    }
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
+        zoomScale *= zoomIncrement;
+        currentTranslationIncrement = baseTranslationIncrement / zoomScale;
+    }
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
+        zoomScale *= 1 / zoomIncrement;
+        currentTranslationIncrement = baseTranslationIncrement / zoomScale;
+    }
+}
+
 int main(void)
 {
     GLFWwindow* window;
 
-    /* Initialize the library */
     if (!glfwInit())
         return -1;
 
-    /* Create a windowed mode window and its OpenGL context */
     window = glfwCreateWindow(screenWidth, screenHeight, "Fractal Visualization", NULL, NULL);
     if (!window)
     {
@@ -27,7 +64,6 @@ int main(void)
         return -1;
     }
 
-    /* Make the window's context current */
     glfwMakeContextCurrent(window);
 
     if (glewInit() != GLEW_OK) {
@@ -36,6 +72,9 @@ int main(void)
 
     glViewport(0, 0, screenWidth, screenHeight);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+
+    glfwSetCursorPosCallback(window, cursor_position_callback);
+    glfwSetKeyCallback(window, key_callback);
 
     unsigned int VAO, VBO, EBO;
     glGenVertexArrays(1, &VAO);
@@ -90,25 +129,29 @@ int main(void)
     glBindVertexArray(0);
 
     Shader shaders("res/shaders/shader.vert", "res/shaders/shader.frag");
-    
+    shaders.useProgram();
 
+    int vOffsetLoc = glGetUniformLocation(shaders.programID, "verticalOffset");
+    int hOffsetLoc = glGetUniformLocation(shaders.programID, "horizontalOffset");
+    int zoomLoc = glGetUniformLocation(shaders.programID, "zoomScale");
+    int screenSizeLoc = glGetUniformLocation(shaders.programID, "screenSize");
+    
     glEnable(GL_DEPTH_TEST);
 
-    /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
     {
-        /* Render here */
         glClearColor(0.2f, 0.0f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         shaders.useProgram();
+        glUniform1f(vOffsetLoc, verticalOffset);
+        glUniform1f(hOffsetLoc, horizontalOffset);
+        glUniform1f(zoomLoc, 1 / zoomScale);
+        glUniform2f(screenSizeLoc, float(screenWidth), float(screenHeight));
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-        /* Swap front and back buffers */
         glfwSwapBuffers(window);
-
-        /* Poll for and process events */
         glfwPollEvents();
     }
 
