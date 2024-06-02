@@ -2,8 +2,8 @@
 
 precision highp float;
 
-#define MAX_ITERATIONS 1000
-#define THRESHOLD 10
+#define MAX_ITERATIONS 500
+#define THRESHOLD 1000
           
 in vec4 gl_FragCoord;
 
@@ -13,6 +13,8 @@ uniform float verticalOffset;
 uniform float horizontalOffset;
 uniform float zoomScale;
 uniform vec2 screenSize;
+uniform bool showJulia;
+uniform vec2 mousePos;
 
 vec2 multiplyComplex(vec2 a, vec2 b) {
     float real = (a.x * b.x) - (a.y * b.y);
@@ -24,10 +26,10 @@ vec2 multiplyComplex(vec2 a, vec2 b) {
 vec2 getPixelCoords() {
     float aspectRatio = screenSize.x/screenSize.y;
 
-    vec2 normalizedCoords = gl_FragCoord.xy/screenSize - 0.5;
+    vec2 normalizedCoords = (gl_FragCoord.xy/screenSize) - 0.5;
     normalizedCoords *= 2;
 
-    vec2 coords = vec2(2.0f, 2.0f/aspectRatio) * zoomScale * normalizedCoords + vec2(horizontalOffset, verticalOffset);
+    vec2 coords = vec2(2.0f * aspectRatio, 2.0f) * zoomScale * normalizedCoords + vec2(horizontalOffset, verticalOffset);
     return coords;
 }
 
@@ -64,12 +66,14 @@ vec3 mapToColor(float iterations) {
         return mix(color8, color9, (t - 0.8) / 0.1);
     } else if (t < 0.95) {
         return mix(color9, color10, (t - 0.9) / 0.05);
-    } else {
+    } else if (t < 1.00) {
         return mix(color10, color11, (t - 0.95) / 0.05);
+    } else {
+        return vec3(0.0, 0.0, 0.0);
     }
 }
 
-float iterateFunc(vec2 coords) {
+float iterateFuncMandelbrot(vec2 coords) {
     int iteration = 0;
     vec2 cVal = coords;
     vec2 zVal = coords;
@@ -85,20 +89,35 @@ float iterateFunc(vec2 coords) {
     return smooth_iter;
 }
 
+float iterateFuncJulia(vec2 coords) {
+    int iteration = 0;
+    vec2 zVal = coords;
+    float mod = zVal.x * zVal.x + zVal.y * zVal.y;
+
+    while(mod < THRESHOLD && iteration < MAX_ITERATIONS) {
+        zVal = multiplyComplex(zVal, zVal) + mousePos;
+        mod = zVal.x * zVal.x + zVal.y * zVal.y;
+        iteration++;
+    }
+
+    float smooth_iter = float(iteration) - log2(max(1.0f, log2(mod)));
+    return smooth_iter;
+}
+
 void main() { 
     vec2 coords = getPixelCoords();
-    float iter = iterateFunc(coords);
+    float iterMandelbrot = iterateFuncMandelbrot(coords);
 
-    if (iter == MAX_ITERATIONS)
-    {
-        gl_FragDepth = 0.0f;
-        color = vec4(0.0f, 0.0f, 0.0f, 1.0f);
-    } 
-    else {
-        // Greyscale
-        // float iterations = float(iter) / float(MAX_ITERATIONS);
-        // color = vec4(iterations, iterations, iterations, 1.0f); 
+    // Greyscale
+    // float iterations = float(iter) / float(MAX_ITERATIONS);
+    // color = vec4(iterations, iterations, iterations, 1.0f); 
 
-        color = vec4(mapToColor(iter), 1.0f); 
+    vec4 mandelBrotColor = vec4(mapToColor(iterMandelbrot), 1.0f); 
+    color = mandelBrotColor;
+
+    if (showJulia) {
+        float iterJulia = iterateFuncJulia(coords);
+        vec4 juliaColor = vec4(mapToColor(iterJulia), 1.0f); 
+        color = mix(juliaColor, mandelBrotColor, 0.25);
     }
 };
