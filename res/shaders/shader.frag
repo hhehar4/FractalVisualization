@@ -1,7 +1,9 @@
 #version 330 core 
 
-#define MAX_ITERATIONS 500
-#define THRESHOLD 1000
+precision highp float;
+
+#define MAX_ITERATIONS 1000
+#define THRESHOLD 10
           
 in vec4 gl_FragCoord;
 
@@ -29,23 +31,58 @@ vec2 getPixelCoords() {
     return coords;
 }
 
+vec3 mapToColor(float iterations) {
+    vec3 color1 = vec3(24,0,0) / 255.0;
+    vec3 color2 = vec3(103,43,33) / 255.0;
+    vec3 color3 = vec3(175,69,69) / 255.0;
+    vec3 color4 = vec3(199,184,127) / 255.0;
+    vec3 color5 = vec3(38,162,152) / 255.0;
+    vec3 color6 = vec3(61,157,180) / 255.0;
+    vec3 color7 = vec3(12,110,187) / 255.0;
+    vec3 color8 = vec3(68,101,189) / 255.0;
+    vec3 color9 = vec3(16,136,131) / 255.0;
+    vec3 color10 = vec3(37,173,126) / 255.0;
+    vec3 color11 = vec3(228,159,148) / 255.0;
+
+    float t = iterations / float(MAX_ITERATIONS);
+
+    if (t < 0.05) {
+        return mix(color1, color2, t / 0.05);
+    } else if (t < 0.1) {
+        return mix(color2, color3, (t - 0.05) / 0.05);
+    } else if (t < 0.2) {
+        return mix(color3, color4, (t - 0.1) / 0.1);
+    } else if (t < 0.3) {
+        return mix(color4, color5, (t - 0.2) / 0.1);
+    } else if (t < 0.5) {
+        return mix(color5, color6, (t - 0.3) / 0.2);
+    } else if (t < 0.7) {
+        return mix(color6, color7, (t - 0.5) / 0.2);
+    } else if (t < 0.8) {
+        return mix(color7, color8, (t - 0.7) / 0.1);
+    } else if (t < 0.9) {
+        return mix(color8, color9, (t - 0.8) / 0.1);
+    } else if (t < 0.95) {
+        return mix(color9, color10, (t - 0.9) / 0.05);
+    } else {
+        return mix(color10, color11, (t - 0.95) / 0.05);
+    }
+}
+
 float iterateFunc(vec2 coords) {
     int iteration = 0;
     vec2 cVal = coords;
     vec2 zVal = coords;
+    float mod = zVal.x * zVal.x + zVal.y * zVal.y;
 
-    while(iteration < MAX_ITERATIONS) {
+    while(mod < THRESHOLD && iteration < MAX_ITERATIONS) {
         zVal = multiplyComplex(zVal, zVal) + cVal;
-        
-        float dist = zVal.x * zVal.x + zVal.y * zVal.y;
-        if(dist > THRESHOLD) {
-            return iteration;
-        }
-
+        mod = zVal.x * zVal.x + zVal.y * zVal.y;
         iteration++;
     }
 
-    return iteration;
+    float smooth_iter = float(iteration) - log2(max(1.0f, log2(mod)));
+    return smooth_iter;
 }
 
 void main() { 
@@ -59,11 +96,9 @@ void main() {
     } 
     else {
         // Greyscale
-        float iterations = float(iter) / float(MAX_ITERATIONS);
+        // float iterations = float(iter) / float(MAX_ITERATIONS);
+        // color = vec4(iterations, iterations, iterations, 1.0f); 
 
-        // Log greyscale
-        // float iterations = log(float(iter)) / log(float(MAX_ITERATIONS));    
-
-        color = vec4(iterations, iterations, iterations, 1.0f); 
+        color = vec4(mapToColor(iter), 1.0f); 
     }
 };
