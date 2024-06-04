@@ -1,39 +1,39 @@
-#version 330 core 
+#version 400 core 
 
 precision highp float;
 
-#define MAX_ITERATIONS 500
-#define THRESHOLD 1000
+#define MAX_ITERATIONS 200
+#define THRESHOLD 100
           
 in vec4 gl_FragCoord;
 
 layout(location = 0) out vec4 color; 
 
-uniform float verticalOffset;
-uniform float horizontalOffset;
-uniform float zoomScale;
-uniform vec2 screenSize;
+uniform double verticalOffset;
+uniform double horizontalOffset;
+uniform double zoomScale;
+uniform dvec2 screenSize;
 uniform bool showJulia;
-uniform vec2 mousePos;
+uniform dvec2 mousePos;
 
-vec2 multiplyComplex(vec2 a, vec2 b) {
-    float real = (a.x * b.x) - (a.y * b.y);
-    float imag = (a.x * b.y) + (a.y * b.x);
+dvec2 multiplyComplex(dvec2 a, dvec2 b) {
+    double real = (a.x * b.x) - (a.y * b.y);
+    double imag = (a.x * b.y) + (a.y * b.x);
 
-    return vec2(real, imag);
+    return dvec2(real, imag);
 }
 
-vec2 getPixelCoords() {
-    float aspectRatio = screenSize.x/screenSize.y;
+dvec2 getPixelCoords() {
+    double aspectRatio = screenSize.x/screenSize.y;
 
-    vec2 normalizedCoords = (gl_FragCoord.xy/screenSize) - 0.5;
+    dvec2 normalizedCoords = (gl_FragCoord.xy/screenSize) - 0.5;
     normalizedCoords *= 2;
 
-    vec2 coords = vec2(2.0f * aspectRatio, 2.0f) * zoomScale * normalizedCoords + vec2(horizontalOffset, verticalOffset);
+    dvec2 coords = dvec2(2.0 * aspectRatio, 2.0) * zoomScale * normalizedCoords + dvec2(horizontalOffset, verticalOffset);
     return coords;
 }
 
-vec3 mapToColor(float iterations) {
+vec3 mapToColor(double iterations) {
     vec3 color1 = vec3(24,0,0) / 255.0;
     vec3 color2 = vec3(103,43,33) / 255.0;
     vec3 color3 = vec3(175,69,69) / 255.0;
@@ -46,7 +46,7 @@ vec3 mapToColor(float iterations) {
     vec3 color10 = vec3(37,173,126) / 255.0;
     vec3 color11 = vec3(228,159,148) / 255.0;
 
-    float t = iterations / float(MAX_ITERATIONS);
+    float t = float(iterations / double(MAX_ITERATIONS));
 
     if (t < 0.05) {
         return mix(color1, color2, t / 0.05);
@@ -73,11 +73,11 @@ vec3 mapToColor(float iterations) {
     }
 }
 
-float iterateFuncMandelbrot(vec2 coords) {
+double iterateFuncMandelbrot(dvec2 coords) {
     int iteration = 0;
-    vec2 cVal = coords;
-    vec2 zVal = coords;
-    float mod = zVal.x * zVal.x + zVal.y * zVal.y;
+    dvec2 cVal = coords;
+    dvec2 zVal = coords;
+    double mod = zVal.x * zVal.x + zVal.y * zVal.y;
 
     while(mod < THRESHOLD && iteration < MAX_ITERATIONS) {
         zVal = multiplyComplex(zVal, zVal) + cVal;
@@ -85,14 +85,14 @@ float iterateFuncMandelbrot(vec2 coords) {
         iteration++;
     }
 
-    float smooth_iter = float(iteration) - log2(max(1.0f, log2(mod)));
+    double smooth_iter = double(iteration) - double(log2(max(1.0f, log2(float(mod)))));
     return smooth_iter;
 }
 
-float iterateFuncJulia(vec2 coords) {
+double iterateFuncJulia(dvec2 coords) {
     int iteration = 0;
-    vec2 zVal = coords;
-    float mod = zVal.x * zVal.x + zVal.y * zVal.y;
+    dvec2 zVal = coords;
+    double mod = zVal.x * zVal.x + zVal.y * zVal.y;
 
     while(mod < THRESHOLD && iteration < MAX_ITERATIONS) {
         zVal = multiplyComplex(zVal, zVal) + mousePos;
@@ -100,23 +100,19 @@ float iterateFuncJulia(vec2 coords) {
         iteration++;
     }
 
-    float smooth_iter = float(iteration) - log2(max(1.0f, log2(mod)));
+    double smooth_iter = double(iteration) - double(log2(max(1.0f, log2(float(mod)))));
     return smooth_iter;
 }
 
 void main() { 
-    vec2 coords = getPixelCoords();
-    float iterMandelbrot = iterateFuncMandelbrot(coords);
-
-    // Greyscale
-    // float iterations = float(iter) / float(MAX_ITERATIONS);
-    // color = vec4(iterations, iterations, iterations, 1.0f); 
+    dvec2 coords = getPixelCoords();
+    double iterMandelbrot = iterateFuncMandelbrot(coords);
 
     vec4 mandelBrotColor = vec4(mapToColor(iterMandelbrot), 1.0f); 
     color = mandelBrotColor;
 
     if (showJulia) {
-        float iterJulia = iterateFuncJulia(coords);
+        double iterJulia = iterateFuncJulia(coords);
         vec4 juliaColor = vec4(mapToColor(iterJulia), 1.0f); 
         color = mix(juliaColor, mandelBrotColor, 0.25);
     }

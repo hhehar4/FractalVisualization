@@ -5,15 +5,15 @@
 
 int screenWidth = 900;
 int screenHeight = 900;
-float verticalOffset = 0.0f;
-float horizontalOffset = 0.0f;
-float zoomScale = 1;
-float baseTranslationIncrement = 0.05f;
-float currentTranslationIncrement = 0.05f;
-float zoomIncrement = 1.1f;
+double verticalOffset = 0.0f;
+double horizontalOffset = 0.0f;
+double zoomScale = 1;
+double baseTranslationIncrement = 0.05f;
+double currentTranslationIncrement = 0.05f;
+double zoomIncrement = 1.1f;
 bool showJulia = false;
-float mouseXConv = 0.0;
-float mouseYConv = 0.0;
+double mouseXConv = 0.0;
+double mouseYConv = 0.0;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
@@ -31,14 +31,14 @@ void cursor_position_callback(GLFWwindow* window, double xPos, double yPos)
     double mouseXPos, mouseYPos;
     glfwGetCursorPos(window, &mouseXPos, &mouseYPos);
 
-    float aspectRatio = float(screenWidth / screenHeight);
+    double aspectRatio = double(screenWidth / screenHeight);
 
     double normalizedX = ((mouseXPos / screenWidth) - 0.5) * 2;   
     double normalizedY = ((mouseYPos / screenHeight) - 0.5) * 2;
     
-    mouseXConv = float(2 * aspectRatio * (1 / zoomScale) * normalizedX + horizontalOffset);
+    mouseXConv = double(2 * aspectRatio * (1 / zoomScale) * normalizedX + horizontalOffset);
     // Multiply by -1 and subtract offset since gl_FragCoord in fragment shader has the origin at the bottom left while glfwGetCursorPos has origin at top left
-    mouseYConv = -1 * float(2 * (1 / zoomScale) * normalizedY - verticalOffset);
+    mouseYConv = -1 * double(2 * (1 / zoomScale) * normalizedY - verticalOffset);
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -141,12 +141,12 @@ int main(void)
 
         shaders.useProgram();
 
-        glUniform1f(vOffsetLoc, verticalOffset);
-        glUniform1f(hOffsetLoc, horizontalOffset);
-        glUniform1f(zoomLoc, 1 / zoomScale);
-        glUniform2f(screenSizeLoc, float(screenWidth), float(screenHeight));
+        glUniform1d(vOffsetLoc, verticalOffset);
+        glUniform1d(hOffsetLoc, horizontalOffset);
+        glUniform1d(zoomLoc, 1 / zoomScale);
+        glUniform2d(screenSizeLoc, float(screenWidth), float(screenHeight));
         glUniform1i(showJuliaLoc, showJulia);
-        glUniform2f(mousePosLoc, mouseXConv, mouseYConv);
+        glUniform2d(mousePosLoc, mouseXConv, mouseYConv);
 
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
